@@ -1,0 +1,41 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+  <form class="d-flex gap-3" action="{% url 'dict:lookup' %}" method="post">
+    {% csrf_token %}
+    <fieldset>
+      <label for="look_up">Your word:</label>
+      <input type="text" name="word" id="look_up" placeholder="Type here" />
+    </fieldset>
+    <input type="submit" value="Look up" />
+  </form>
+  <div>
+    {% if search_result.success %}
+      {% if search_result.message %}
+        <strong class="text-capitalize">{{ search_result.message }}</strong>
+      {% else %}
+        <strong>Showing results for '{{ form.data.word }}'</strong>
+        <p><span class="fs-4 fw-bold text-primary">{{ search_result.exact_word }}</span><span class="fst-italic text-info"> {{ search_result.type }}</span><span> {{ search_result.ipa }}</span></p>
+        </div>
+        {% if search_result.meanings %}
+        <h5 class="text-warning">Definitions:</h5>
+        <ul class="text-secondary">
+          {% for meaning in search_result.meanings %}
+            <li>{{ meaning }}</li>
+          {% endfor %}
+        </ul>
+
+        {% endif %}
+        <h5 class="text-warning">Frequently used in phrases:</h5>
+        <ul>
+          {% for phrase in search_result.phrases %}
+            <li class="text-body-secondary">{{ phrase }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% else %}
+    <h1 class="text-body-tertiary">Welcome to My LookUp</h1>
+    {% endif %}
+  </div>
+
+{% endblock %}
