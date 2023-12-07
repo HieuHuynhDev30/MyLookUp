@@ -10,8 +10,7 @@ class WordForm(forms.Form):
         searched_word = self.cleaned_data['word']
         if searched_word.isalpha():
             api_key = '57f42480-9178-4af8-9398-2f75f536fc08'
-            api_url = f'''https://www.dictionaryapi.com/api/v3/references/learners/json/
-{searched_word}?key={api_key}'''
+            api_url = f'''https://www.dictionaryapi.com/api/v3/references/learners/json/{searched_word}?key={api_key}'''
             response = requests.get(api_url)
             if response.status_code == 200:
                 response = response.json()
@@ -26,6 +25,17 @@ class WordForm(forms.Form):
                         result['type'] = meta['app-shortdef']['fl'].casefold()
                         ipa = response_object['hwi']['prs'][0]['ipa']
                         result['ipa'] = f'/{ipa}/'
+                        audio = response_object['hwi']['prs'][0]['sound']['audio']
+                        subdirectory = audio[0]
+                        prefixes = ['bix', 'gg', *tuple(list('0123456789'))]
+                        for prefix in prefixes:
+                            if audio.startswith(prefix, 0):
+                                subdirectory = prefix
+                        formats = ['mp3', 'wav', 'ogg']
+                        audio_srcs = []
+                        for ext in formats:
+                            audio_srcs.append({'src': f'''https://media.merriam-webster.com/audio/prons/en/us/mp3/{subdirectory}/{audio}.{ext}''', 'type': ext})
+                        result['audio_srcs'] = audio_srcs
                         result['phrases'] = []
                         for phrase in stems[1:]:
                             result['phrases'].append(phrase.capitalize())
