@@ -1,7 +1,7 @@
 {% extends 'admin/base.html' %}
 
 {% block content %}
-  <form class="d-flex gap-3" action="{% url 'dict:lookup' %}" method="post">
+  <form id="word-form" class="d-flex gap-3" method="post">
     {% csrf_token %}
     <fieldset>
       <label for="look_up">Your word:</label>
@@ -9,7 +9,7 @@
     </fieldset>
     <input type="submit" value="Look up" />
   </form>
-  <div>
+  <div id="result-of-form" class="">
     {% if search_result.success %}
       {% if search_result.message %}
         <strong class="text-capitalize">{{ search_result.message }}</strong>
@@ -18,12 +18,15 @@
         <p>
           <span class="fs-4 fw-bold text-primary">{{ search_result.exact_word }}</span> <span class="fst-italic text-info">{{ search_result.type }}</span> <span>{{ search_result.ipa }}</span>
         </p>
-        <audio controls>
-          {% for audio_src in search_result.audio_srcs %}
-            <source src="{{ audio_src.src }}" type="audio/{{ audio_src.type }}" />
-          {% endfor %}
-          Your browser does not support the audio element.
-        </audio>
+
+        {% if search_result.has_audio %}
+          <audio controls>
+            {% for audio_src in search_result.audio_srcs %}
+              <source src="{{ audio_src.src }}" type="audio/{{ audio_src.type }}" />
+            {% endfor %}Your browser does not support the audio element.
+          </audio>
+        {% endif %}
+
         {% if search_result.meanings %}
           <h5 class="text-warning">Definitions:</h5>
           <ul class="text-secondary">
@@ -40,7 +43,29 @@
         </ul>
       {% endif %}
     {% else %}
-      <h1 class="text-body-tertiary">Welcome to My LookUp</h1>
+      <h1 id="welcome" class="text-body-tertiary">Welcome to My LookUp</h1>
     {% endif %}
   </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(document).ready(function () {
+      $('#word-form').submit(function (e) {
+        e.preventDefault();
+        $.ajax({
+          type: 'POST',
+          url: "{% url 'dict:lookup' %}",
+          data: {
+            $(this).serialize(),
+          },
+          success: function (response) {
+            $('#word-form').trigger('reset')
+            $('#result-of-form').removeClass('d-none')
+            $('#welcome').toggleClass('d-none')
+          },
+        })
+      })
+    })
+  </script>
 {% endblock %}

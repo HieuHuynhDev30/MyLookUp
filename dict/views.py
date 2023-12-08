@@ -1,9 +1,11 @@
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
 
 from .forms import WordForm
 
 
 # Create your views here.
+@csrf_exempt
 def lookup(request):
     search_result = {}
     if request.method == "POST":

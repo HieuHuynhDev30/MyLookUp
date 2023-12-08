@@ -2,6 +2,18 @@ import requests
 from django import forms
 
 
+def find_key(json_input, key):
+    if isinstance(json_input, dict):
+        for k, v in json_input.items():
+            if k == key:
+                yield v
+            if isinstance(v, (dict, list)):
+                yield from find_key(v, key)
+    elif isinstance(json_input, list):
+        for item in json_input:
+            yield from find_key(item, key)
+
+
 class WordForm(forms.Form):
     word = forms.CharField(label='Your word', max_length=50)
 
@@ -22,10 +34,17 @@ class WordForm(forms.Form):
                         stems = meta['stems']
                         exact_word = stems[0]
                         result['exact_word'] = exact_word.capitalize()
-                        result['type'] = meta['app-shortdef']['fl'].casefold()
+                        types = find_key(response_object, 'fl')
+                        word_type = ''
+                        for i in types:
+                            word_type = i
+                            break
+                        result['type'] = word_type
                         ipa = response_object['hwi']['prs'][0]['ipa']
                         result['ipa'] = f'/{ipa}/'
                         audio = response_object['hwi']['prs'][0]['sound']['audio']
+                        if not audio is None:
+                            result['has_audio'] = True
                         subdirectory = audio[0]
                         prefixes = ['bix', 'gg', *tuple(list('0123456789'))]
                         for prefix in prefixes:
@@ -34,8 +53,11 @@ class WordForm(forms.Form):
                         formats = ['mp3', 'wav', 'ogg']
                         audio_srcs = []
                         for ext in formats:
-                            audio_srcs.append({'src': f'''https://media.merriam-webster.com/audio/prons/en/us/mp3/{subdirectory}/{audio}.{ext}''', 'type': ext})
+                            audio_srcs.append({
+                                'src': f'''https://media.merriam-webster.com/audio/prons/en/us/mp3/{subdirectory}/{audio}.{ext}''',
+                                'type': ext})
                         result['audio_srcs'] = audio_srcs
+
                         result['phrases'] = []
                         for phrase in stems[1:]:
                             result['phrases'].append(phrase.capitalize())
